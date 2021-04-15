@@ -23,15 +23,18 @@ def prepare_data(config):
                 wav_path = os.path.join(in_dir, subdataset, "wav", speaker, wav_name)
                 if os.path.exists(wav_path):
                     os.makedirs(os.path.join(out_dir, speaker), exist_ok=True)
-                    
-                    wav, _ = librosa.load(wav_path, sampling_rate)
-                    wav = wav / max(abs(wav)) * max_wav_value
-                    wavfile.write(
-                        os.path.join(out_dir, speaker, wav_name),
-                        sampling_rate,
-                        wav.astype(np.int16),
-                    )
-                    
+
+                    # copy and normalize basename.wav
+                    if config["choice"]["norm_wav"]:
+                        wav, _ = librosa.load(wav_path, sampling_rate)
+                        wav = wav / max(abs(wav)) * max_wav_value
+                        wavfile.write(
+                            os.path.join(out_dir, speaker, wav_name),
+                            sampling_rate,
+                            wav.astype(np.int16),
+                        )
+
+                    # write basename.lab
                     with open(
                         os.path.join(out_dir, speaker, "{}.lab".format(wav_name[:11])),
                         "w",

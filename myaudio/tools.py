@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 import pyworld as pw
-from scipy.io.wavfile import read
 
 
 def load_wav_to_torch(filename):
@@ -10,10 +9,10 @@ def load_wav_to_torch(filename):
     return torch.FloatTensor(data.astype(np.float32)), sampling_rate
 
 
-def get_mel_energy_from_wav(filename, stft, max_wav_value=32768.0):
-    audio, sampling_rate = load_wav_to_torch(filename)
+def get_mel_energy_from_wav(audio, sampling_rate, stft, max_wav_value=32768.0):
+    audio = torch.FloatTensor(audio.astype(np.float32))
     if sampling_rate != stft.sampling_rate:
-        raise ValueError("{} {} SR doesn't match target {} SR".format(
+        raise ValueError("{} SR doesn't match target {} SR".format(
             sampling_rate, stft.sampling_rate))
         
     audio_norm = audio / max_wav_value
@@ -27,8 +26,7 @@ def get_mel_energy_from_wav(filename, stft, max_wav_value=32768.0):
     return melspec, energy
 
 
-def get_f0_from_wav(filename, hop_length=256, max_wav_value=32768.0):
-    sampling_rate, audio = read(filename)
+def get_f0_from_wav(audio, sampling_rate, hop_length=256, max_wav_value=32768.0):
     audio_norm = (audio / max_wav_value).astype(np.float64)
 
     _f0, t = pw.dio(
@@ -53,6 +51,7 @@ def save_feature_to_npy(feature, feature_type, out_dir='./', basename='xx'):
 
 if __name__ == '__main__':
     import yaml
+    from scipy.io.wavfile import read
     from .stft import TacotronSTFT
 
     config = yaml.load(open('./config.yaml', 'r'))
@@ -67,8 +66,10 @@ if __name__ == '__main__':
             config["mel"]["mel_fmax"],
         )
 
-    mel, energy = get_mel_energy_from_wav('xx.wav', _stft)
-    f0 = get_f0_from_wav('xx.wav')
+    sampling_rate, audio = read('xx.wav')
+
+    mel, energy = get_mel_energy_from_wav(audio, sampling_rate, _stft)
+    f0 = get_f0_from_wav(audio, sampling_rate)
     
     save_feature_to_npy(mel, 'mel')
     save_feature_to_npy(energy, 'energy')

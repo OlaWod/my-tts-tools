@@ -2,7 +2,7 @@ import yaml
 import argparse
 
 from myaudio import TacotronSTFT
-from myprocessor.process import process_data
+from myprocessor.process import Processor
 
 
 if __name__ == '__main__':
@@ -12,18 +12,8 @@ if __name__ == '__main__':
     
     config = yaml.load(open(args.config, 'r'), Loader = yaml.FullLoader)
 
-    print("Loading STFT...")
-    _stft = TacotronSTFT(
-        config["stft"]["filter_length"],
-        config["stft"]["hop_length"],
-        config["stft"]["win_length"],
-        config["mel"]["n_mel_channels"],
-        config["audio"]["sampling_rate"],
-        config["mel"]["mel_fmin"],
-        config["mel"]["mel_fmax"],
-    ) 
-
-    process_data(config, _stft)
+    processor = Processor(config)
+    processor.process_data()
 
     '''
     !python preprocess.py config/LJSpeech/preprocess.yaml

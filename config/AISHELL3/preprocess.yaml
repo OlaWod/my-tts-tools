@@ -11,6 +11,11 @@ path:
     feature_dir: "./preprocessed_data/AISHELL3"
 
 
+choice:
+    norm_wav: True
+    energy_phone_average: True
+    f0_phone_average: True
+    
 
 audio:
     sampling_rate: 22050

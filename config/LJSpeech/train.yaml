@@ -1,0 +1,2 @@
+optimizer:
+  batch_size: 2
