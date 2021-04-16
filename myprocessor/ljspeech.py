@@ -13,7 +13,7 @@ def prepare_data(config):
 
     sampling_rate = config["audio"]["sampling_rate"]
     max_wav_value = config["audio"]["max_wav_value"]
-    cleaners = config["text_cleaner"]
+    cleaners = config["text"]["text_cleaner"]
 
     speaker = "LJ"
 

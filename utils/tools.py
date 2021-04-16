@@ -3,6 +3,28 @@ import numpy as np
 
 
 def to_device(data, device):
+    if len(data) == 5:
+        (
+            basenames,
+            speaker_ids,
+            phone_ids,
+
+            phoneid_lens,
+            max_phoneid_lens,
+        ) = data
+
+        speaker_ids = torch.from_numpy(speaker_ids).long().to(device)
+        phone_ids = torch.from_numpy(phone_ids).long().to(device)
+
+        return (
+            basenames,
+            speaker_ids,
+            phone_ids,
+
+            phoneid_lens,
+            max_phoneid_lens,
+        )
+        
     (
         basenames,
         speaker_ids,
@@ -43,6 +65,11 @@ def to_device(data, device):
         mel_lens,
         max_mel_lens
     )
+
+
+def get_param_num(model):
+    num_param = sum(param.numel() for param in model.parameters())
+    return num_param
 
 
 def pad_1D(inputs):

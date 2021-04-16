@@ -4,7 +4,9 @@ val_size: 2
 
 speaker_i: 7
 
-text_cleaner: []
+text:
+    language: "ch"
+    text_cleaner: []
 
 path:
     corpus_dir: "./corpus/data_aishell3"

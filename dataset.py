@@ -3,19 +3,19 @@ import json
 import numpy as np
 from torch.utils.data import Dataset
 
-from mytext import phone_to_sequence
+from mytext import phone_to_sequence, process_english, process_mandarin
 from utils import pad_1D, pad_2D
 
 
 class MyDataset(Dataset):
     def __init__(self, metafile, preprocess_cfg, train_cfg, sort=False, drop_last=False):
-        self.basename, self.speaker, self.text, self.phone = self.process_meta(metafile)
         self.feature_dir = preprocess_cfg['path']['feature_dir']
-        self.cleaner = preprocess_cfg['text_cleaner']
+        self.cleaner = preprocess_cfg['text']['text_cleaner']
+        self.basename, self.speaker, self.text, self.phone = self.process_meta(metafile)
         with open(os.path.join(self.feature_dir, "speakers.json")) as f:
             self.speaker_map = json.load(f)
 
-        self.batch_size = train_cfg['optimizer']['batch_size']
+        self.batch_size = train_cfg['batch_size']
         self.sort = sort
         self.drop_last = drop_last
         
@@ -60,7 +60,7 @@ class MyDataset(Dataset):
 
 
     def process_meta(self, metafile):
-        with open(metafile, 'r', encoding='utf-8') as f:
+        with open(os.path.join(self.feature_dir, metafile), 'r', encoding='utf-8') as f:
             basename = []
             speaker = []
             text = []
@@ -135,6 +135,73 @@ class MyDataset(Dataset):
         return output
 
 
+class TextDataset(Dataset):
+    def __init__(self, metafile, preprocess_cfg):
+        self.feature_dir = preprocess_cfg['path']['feature_dir']
+        self.language = preprocess_cfg['text']['language']
+        self.cleaner = preprocess_cfg['text']['text_cleaner']
+        self.basename, self.speaker, self.text = self.process_meta(metafile)
+        with open(os.path.join(self.feature_dir, "speakers.json")) as f:
+            self.speaker_map = json.load(f)
+    
+    def __getitem__(self, idx):
+        basename = self.basename[idx]
+        speaker = self.speaker[idx]
+        speaker_id = self.speaker_map[speaker]
+        text = self.text[idx]
+        if self.language == "en":
+            phone_id = np.array(process_english(text)[-1])
+        else:
+            phone_id = np.array(process_mandarin(text)[-1])
+
+        sample = {
+            'basename':basename,
+            'speaker_id':speaker_id,
+            'phone_id':phone_id,
+        }
+
+        return sample
+
+  
+    def __len__(self):
+        return len(self.basename)
+
+
+    def process_meta(self, metafile):
+        with open(metafile, 'r', encoding='utf-8') as f:
+            basename = []
+            speaker = []
+            text = []
+            
+            for line in f.readlines():
+                b, s, t = line.strip('\n').split('|')
+                basename.append(b)
+                speaker.append(s)
+                text.append(t)
+                
+        return basename, speaker, text
+
+
+    def collate_fn(self, data):
+        basenames = [d['basename'] for d in data]
+        speaker_ids = [d["speaker_id"] for d in data]
+        phone_ids = [d['phone_id'] for d in data]
+
+        phone_id_lens = np.array([phone_id.shape[0] for phone_id in phone_ids])
+
+        speaker_ids = np.array(speaker_ids)
+        phone_ids = pad_1D(phone_ids)
+
+        return (
+            basenames,
+            speaker_ids,
+            phone_ids,
+
+            phone_id_lens,
+            max(phone_id_lens)
+        )
+
+
 if __name__ == '__main__':
     import yaml
     import torch
@@ -153,24 +220,24 @@ if __name__ == '__main__':
     )
 
     # train
-    train_meta = "./preprocessed_data/LJSpeech/train.txt"
+    train_meta = "train.txt"
     train_dataset = MyDataset(
         train_meta, preprocess_cfg, train_cfg, sort=True, drop_last=True
     )
     train_loader = DataLoader(
         train_dataset,
-        batch_size=train_cfg["optimizer"]["batch_size"] * 4,
+        batch_size=train_cfg["batch_size"] * 4,
         shuffle=True,
         collate_fn=train_dataset.collate_fn
     )
     # val
-    val_meta = "./preprocessed_data/LJSpeech/val.txt"
+    val_meta = "val.txt"
     val_dataset = MyDataset(
         val_meta, preprocess_cfg, train_cfg, sort=False, drop_last=False
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=train_cfg["optimizer"]["batch_size"],
+        batch_size=train_cfg["batch_size"],
         shuffle=False,
         collate_fn=val_dataset.collate_fn
     )

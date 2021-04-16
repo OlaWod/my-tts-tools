@@ -4,7 +4,9 @@ val_size: 2
 
 speaker_i: 2
 
-text_cleaner: ['english_cleaners']
+text:
+    language: "en"
+    text_cleaner: ['english_cleaners']
 
 path:
     corpus_dir: "./corpus/LJSpeech-1.1"
